@@ -25,10 +25,14 @@ Secure Notes App is a simple application built with Express.js and MongoDB. It p
    ```bash
    git clone https://github.com/yourusername/secure-notes-app.git
 2.Switch to master branch.
+
 3.cd secure-notes-app
+
 4.npm install
+
 5.Create a .env file in the project root with the following content:
   MONGODB_URI=mongodb://localhost:27017/secure-notes-db
+  
 6.npm start to start the server.
 
 
