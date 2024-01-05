@@ -16,7 +16,7 @@ Secure Notes App is a simple application built with Express.js and MongoDB. It p
 
 - **Text Indexing for Search**: Utilized MongoDB's text indexing for efficient keyword-based searches.
 
-- **Testing with Jest**: A JavaScript testing framework for writing unit and integration tests.
+- **Testing with Mocha**: A JavaScript testing framework for writing unit and integration tests.
 
 ## Project Setup
 
