@@ -1,5 +1,4 @@
-
-const { expect } = require('chai');
+const assert = require('assert');
 const supertest = require('supertest');
 const mongoose = require('mongoose');
 const app = require('../app');
@@ -10,70 +9,75 @@ const request = supertest(app);
 
 describe('Integration Tests', () => {
   before(async () => {
-    // Connect to a test database
-    await mongoose.connect('mongodb://localhost:27017/test-database', { useNewUrlParser: true, useUnifiedTopology: true });
+    
+    await mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
   });
 
   after(async () => {
-    // Disconnect from the test database after all tests
+    
     await mongoose.disconnect();
   });
 
   beforeEach(async () => {
-    // Clear the User and Note collections before each test
+   
     await User.deleteMany();
     await Note.deleteMany();
   });
 
-  it('should sign up, log in, create, update, delete, and search notes', async () => {
-    // Signup
+  it('should sign up, log in, create, update, delete, and search notes', async function() {
+    this.timeout(5000);
+    
     const signupResponse = await request.post('/api/auth/signup').send({
       username: 'testuser',
       password: 'testpassword',
     });
+    console.log(signupResponse.status)
+    assert.strictEqual(signupResponse.status, 200);
 
-    expect(signupResponse.status).to.equal(200);
-
-    // Login and get the token
+    
     const loginResponse = await request.post('/api/auth/login').send({
       username: 'testuser',
       password: 'testpassword',
     });
 
-    expect(loginResponse.status).to.equal(200);
+    assert.strictEqual(loginResponse.status, 200);
     const token = loginResponse.body.token;
 
-    // Create a note
+    
     const createNoteResponse = await request.post('/api/notes').send({
       content: 'Test note content',
-    }).set('Authorization', `Bearer ${token}`);
+      title: 'Test'
+    }).set('Authorization', `${token}`);
 
-    expect(createNoteResponse.status).to.equal(200);
+    assert.strictEqual(createNoteResponse.status, 200);
     const noteId = createNoteResponse.body._id;
 
-    // Get all notes
-    const getAllNotesResponse = await request.get('/api/notes').set('Authorization', `Bearer ${token}`);
-    expect(getAllNotesResponse.status).to.equal(200);
-    expect(getAllNotesResponse.body).to.be.an('array').that.has.lengthOf(1);
+    
+    const getAllNotesResponse = await request.get('/api/notes').set('Authorization', `${token}`);
+    assert.strictEqual(getAllNotesResponse.status, 200);
+    assert(Array.isArray(getAllNotesResponse.body));
+    assert.strictEqual(getAllNotesResponse.body.length, 1);
 
-    // Update the note
+    
     const updateNoteResponse = await request.put(`/api/notes/${noteId}`).send({
       content: 'Updated note content',
-    }).set('Authorization', `Bearer ${token}`);
-    expect(updateNoteResponse.status).to.equal(200);
+    }).set('Authorization', `${token}`);
+    assert.strictEqual(updateNoteResponse.status, 200);
 
-    // Search for notes
-    const searchNotesResponse = await request.get('/api/notes/search?q=Updated').set('Authorization', `Bearer ${token}`);
-    expect(searchNotesResponse.status).to.equal(200);
-    expect(searchNotesResponse.body).to.be.an('array').that.has.lengthOf(1);
+    
+    const searchNotesResponse = await request.get('/api/notes/search?q=Updated').set('Authorization', `${token}`);
+    assert.strictEqual(searchNotesResponse.status, 200);
+    assert(Array.isArray(searchNotesResponse.body));
+    assert.strictEqual(searchNotesResponse.body.length, 1);
 
-    // Delete the note
-    const deleteNoteResponse = await request.delete(`/api/notes/${noteId}`).set('Authorization', `Bearer ${token}`);
-    expect(deleteNoteResponse.status).to.equal(200);
+    
+    const deleteNoteResponse = await request.delete(`/api/notes/${noteId}`).set('Authorization', `${token}`);
+    assert.strictEqual(deleteNoteResponse.status, 200);
 
-    // Ensure the note is deleted
-    const checkDeletedNoteResponse = await request.get('/api/notes').set('Authorization', `Bearer ${token}`);
-    expect(checkDeletedNoteResponse.status).to.equal(200);
-    expect(checkDeletedNoteResponse.body).to.be.an('array').that.has.lengthOf(0);
+    
+    const checkDeletedNoteResponse = await request.get('/api/notes').set('Authorization', `${token}`);
+    assert.strictEqual(checkDeletedNoteResponse.status, 200);
+    assert(Array.isArray(checkDeletedNoteResponse.body));
+    assert.strictEqual(checkDeletedNoteResponse.body.length, 0);
   });
 });

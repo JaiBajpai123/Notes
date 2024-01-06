@@ -1,6 +1,4 @@
-
-const { expect } = require('chai');
-const sinon = require('sinon');
+const assert = require('assert');
 const noteService = require('../src/services/noteService');
 const Note = require('../src/models/Note');
 
@@ -11,37 +9,42 @@ describe('Unit Tests', () => {
         const userId = 'user123';
         const query = 'meeting';
 
-        // Stub the find method of the Note model
-        const findStub = sinon.stub(Note, 'find').resolves([{ content: 'Meeting notes', user: userId }]);
+        
+        const originalFind = Note.find;
+        Note.find = async (queryObj) => {
+          assert.deepStrictEqual(queryObj, { $text: { $search: query }, user: userId });
+          return [{ content: 'Meeting notes', user: userId }];
+        };
 
-        const result = await noteService.searchNotes(query, userId);
+        try {
+          const result = await noteService.searchNotes(query, userId);
 
-        // Assert that the find method was called with the correct arguments
-        expect(findStub.calledWith({ $text: { $search: query }, user: userId })).to.be.true;
-
-        // Assert the result
-        expect(result).to.deep.equal([{ content: 'Meeting notes', user: userId }]);
-
-        // Restore the stub
-        findStub.restore();
+          
+          assert.deepStrictEqual(result, [{ content: 'Meeting notes', user: userId }]);
+        } finally {
+         
+          Note.find = originalFind;
+        }
       });
 
       it('should handle errors during search', async () => {
         const userId = 'user123';
         const query = 'error';
 
-        // Stub the find method to simulate an error
-        const findStub = sinon.stub(Note, 'find').rejects(new Error('Database error'));
+        
+        const originalFind = Note.find;
+        Note.find = async () => {
+          throw new Error('Database error');
+        };
 
         try {
-          await noteService.searchNotes(query, userId);
-        } catch (error) {
-          // Assert that the error is handled appropriately
-          expect(error.message).to.equal('Database error');
+          await assert.rejects(async () => {
+            await noteService.searchNotes(query, userId);
+          }, { message: 'Database error' });
+        } finally {
+          
+          Note.find = originalFind;
         }
-
-        // Restore the stub
-        findStub.restore();
       });
     });
   });
